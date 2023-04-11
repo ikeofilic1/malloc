@@ -172,6 +172,9 @@ struct _block *growHeap(struct _block *last, size_t size)
       last->next = curr;
    }
 
+   ++num_grows;
+   ++num_blocks;
+
    /* Update _block metadata:
       Set the size of the new block and initialize the new block to "free".
       Set its next pointer to NULL since it's now the tail of the linked list.
@@ -196,7 +199,6 @@ struct _block *growHeap(struct _block *last, size_t size)
  */
 void *malloc(size_t size)
 {
-
    if (atexit_registered == 0)
    {
       atexit_registered = 1;
@@ -211,6 +213,9 @@ void *malloc(size_t size)
    {
       return NULL;
    }
+
+   // After alignment or not??
+   num_requested += size;
 
    /* Look for free _block.  If a free block isn't found then we need to grow our heap. */
 
@@ -242,13 +247,17 @@ void *malloc(size_t size)
          struct _block *newNode = (struct _block *)((uintptr_t)next + sizeof(struct _block) + size);
 
          newNode->next = next->next; // Add a node in the middle of next and next->next
-         newNode->free = true; // we just split this from a free block so it should be free
+         newNode->free = true;       // we just split this from a free block so it should be free
          newNode->size = next->size - size - sizeof(struct _block);
-      
+
          /* Set the new size of next, as well as the pointer to the "node" in between*/
          next->next = newNode;
          next->size = size;
+
+         ++num_splits;
+         ++num_blocks;
       }
+      ++num_reuses;
    }
 
    /* Could not find free _block or grow heap, so just return NULL */
@@ -259,6 +268,9 @@ void *malloc(size_t size)
 
    /* Mark _block as in use */
    next->free = false;
+
+   /* The user has sucessfully gotten a valid address at this point*/
+   ++num_mallocs;
 
    /* Return data address associated with _block to the user */
    return BLOCK_DATA(next);
@@ -280,7 +292,6 @@ void free(void *ptr)
    {
       return;
    }
-
    /* Make _block as free */
    struct _block *prev;
    struct _block *curr = BLOCK_HEADER(ptr);
@@ -312,16 +323,27 @@ void free(void *ptr)
    prev->size += curr->size + sizeof(struct _block);
    curr = prev;
 
+   /* The first coalesce just happened */
+   ++num_coalesces;
+   --num_blocks;
+
 second_check:
-   if (curr->next->free)
+   // If there is a node after this and it is free then we coalesce
+   if (curr->next && curr->next->free)
    {
       curr->size += curr->next->size + sizeof(struct _block);
       curr->next = curr->next->next;
-   }
 
+      /* The second coalesce just happened */
+      ++num_coalesces;
+      --num_blocks;
+   }
    // There should be no more than 3 frees in a row
    // if we implemented this correctly but just in case
-   assert(!curr->next->free);
+   assert(!curr->next || !curr->next->free);
+
+   /* Free is sucessful*/
+   ++num_frees;
 }
 
 void *calloc(size_t nmemb, size_t size)
