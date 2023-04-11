@@ -6,20 +6,20 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define ALIGN4(s)         (((((s) - 1) >> 2) << 2) + 4)
-#define BLOCK_DATA(b)     ((b) + 1)
-#define BLOCK_HEADER(ptr) ((struct _block *)(ptr) - 1)
+#define ALIGN4(s) (((((s)-1) >> 2) << 2) + 4)
+#define BLOCK_DATA(b) ((b) + 1)
+#define BLOCK_HEADER(ptr) ((struct _block *)(ptr)-1)
 
 static int atexit_registered = 0;
-static int num_mallocs       = 0;
-static int num_frees         = 0;
-static int num_reuses        = 0;
-static int num_grows         = 0;
-static int num_splits        = 0;
-static int num_coalesces     = 0;
-static int num_blocks        = 0;
-static int num_requested     = 0;
-static int max_heap          = 0;
+static int num_mallocs = 0;
+static int num_frees = 0;
+static int num_reuses = 0;
+static int num_grows = 0;
+static int num_splits = 0;
+static int num_coalesces = 0;
+static int num_blocks = 0;
+static int num_requested = 0;
+static int max_heap = 0;
 
 /*
  *  \brief printStatistics
@@ -31,28 +31,27 @@ static int max_heap          = 0;
  *
  *  \return none
  */
-void printStatistics( void )
+void printStatistics(void)
 {
-  printf("\nheap management statistics\n");
-  printf("mallocs:\t%d\n", num_mallocs );
-  printf("frees:\t\t%d\n", num_frees );
-  printf("reuses:\t\t%d\n", num_reuses );
-  printf("grows:\t\t%d\n", num_grows );
-  printf("splits:\t\t%d\n", num_splits );
-  printf("coalesces:\t%d\n", num_coalesces );
-  printf("blocks:\t\t%d\n", num_blocks );
-  printf("requested:\t%d\n", num_requested );
-  printf("max heap:\t%d\n", max_heap );
+   printf("\nheap management statistics\n");
+   printf("mallocs:\t%d\n", num_mallocs);
+   printf("frees:\t\t%d\n", num_frees);
+   printf("reuses:\t\t%d\n", num_reuses);
+   printf("grows:\t\t%d\n", num_grows);
+   printf("splits:\t\t%d\n", num_splits);
+   printf("coalesces:\t%d\n", num_coalesces);
+   printf("blocks:\t\t%d\n", num_blocks);
+   printf("requested:\t%d\n", num_requested);
+   printf("max heap:\t%d\n", max_heap);
 }
 
-struct _block 
+struct _block
 {
-   size_t  size;         /* Size of the allocated _block of memory in bytes */
-   struct _block *next;  /* Pointer to the next _block of allcated memory   */
-   bool   free;          /* Is this _block free?                            */
-   char   padding[3];    /* Padding: IENTRTMzMjAgU3ByaW5nIDIwMjM            */
+   size_t size;         /* Size of the allocated _block of memory in bytes */
+   struct _block *next; /* Pointer to the next _block of allcated memory   */
+   bool free;           /* Is this _block free?                            */
+   char padding[3];     /* Padding: IENTRTMzMjAgU3ByaW5nIDIwMjM            */
 };
-
 
 struct _block *heapList = NULL; /* Free list to track the _blocks available */
 
@@ -68,7 +67,7 @@ struct _block *heapList = NULL; /* Free list to track the _blocks available */
  * \TODO Implement Best Fit
  * \TODO Implement Worst Fit
  */
-struct _block *findFreeBlock(struct _block **last, size_t size) 
+struct _block *findFreeBlock(struct _block **last, size_t size)
 {
    struct _block *curr = heapList;
 
@@ -81,28 +80,56 @@ struct _block *findFreeBlock(struct _block **last, size_t size)
    // with curr pointing to NULL, meaning we've run to the end of the list
    // without finding a node or it ends pointing to a free node that has enough
    // space for the request.
-   // 
-   while (curr && !(curr->free && curr->size >= size)) 
+   //
+   while (curr && !(curr->free && curr->size >= size))
    {
       *last = curr;
-      curr  = curr->next;
+      curr = curr->next;
    }
 #endif
 
-// \TODO Put your Best Fit code in this #ifdef block
 #if defined BEST && BEST == 0
-   /** \TODO Implement best fit here */
+   //
+   size_t bestDiff = SIZE_MAX;
+   struct _block *best = NULL; // In case there is no available block
+   while (curr)
+   {
+      if (curr->free && (curr->size >= size) &&
+          ((curr->size - size) < bestDiff))
+      {
+         best = curr;
+         bestDiff = curr->size - size;
+      }
+      *last = curr;
+      curr = curr->next;
+   }
+   // Return the best
+   curr = best;
 #endif
 
-// \TODO Put your Worst Fit code in this #ifdef block
 #if defined WORST && WORST == 0
-   /** \TODO Implement worst fit here */
+   size_t worstDiff = 0;
+   struct _block *worst = NULL; // In case there is no available block
+   while (curr)
+   {
+      if (curr->free && (curr->size >= size) &&
+          ((curr->size - size) > worstDiff))
+      {
+         worst = curr;
+         worstDiff = curr->size - size;
+      }
+      *last = curr;
+      curr = curr->next;
+   }
+
+   // Return the worst (low-key worst-fit is best algo)
+   curr = worst;
 #endif
 
-// \TODO Put your Next Fit code in this #ifdef block
-#if defined NEXT && NEXT == 0
+   // \TODO Put your Next Fit code in this #ifdef block
+   //#if defined NEXT && NEXT == 0
    /** \TODO Implement next fit here */
-#endif
+   //#endif
 
    return curr;
 }
@@ -119,7 +146,7 @@ struct _block *findFreeBlock(struct _block **last, size_t size)
  *
  * \return returns the newly allocated _block of NULL if failed
  */
-struct _block *growHeap(struct _block *last, size_t size) 
+struct _block *growHeap(struct _block *last, size_t size)
 {
    /* Request more space from OS */
    struct _block *curr = (struct _block *)sbrk(0);
@@ -128,19 +155,19 @@ struct _block *growHeap(struct _block *last, size_t size)
    assert(curr == prev);
 
    /* OS allocation failed */
-   if (curr == (struct _block *)-1) 
+   if (curr == (struct _block *)-1)
    {
       return NULL;
    }
 
    /* Update heapList if not set */
-   if (heapList == NULL) 
+   if (heapList == NULL)
    {
       heapList = curr;
    }
 
    /* Attach new _block to previous _block */
-   if (last) 
+   if (last)
    {
       last->next = curr;
    }
@@ -167,20 +194,20 @@ struct _block *growHeap(struct _block *last, size_t size)
  * \return returns the requested memory allocation to the calling process 
  * or NULL if failed
  */
-void *malloc(size_t size) 
+void *malloc(size_t size)
 {
 
-   if( atexit_registered == 0 )
+   if (atexit_registered == 0)
    {
       atexit_registered = 1;
-      atexit( printStatistics );
+      atexit(printStatistics);
    }
 
    /* Align to multiple of 4 */
    size = ALIGN4(size);
 
    /* Handle 0 size */
-   if (size == 0) 
+   if (size == 0)
    {
       return NULL;
    }
@@ -190,25 +217,46 @@ void *malloc(size_t size)
    struct _block *last = heapList;
    struct _block *next = findFreeBlock(&last, size);
 
-   /* TODO: If the block found by findFreeBlock is larger than we need then:
-            If the leftover space in the new block is greater than the sizeof(_block)+4 then
-            split the block.
-            If the leftover space in the new block is less than the sizeof(_block)+4 then
-            don't split the block.
+   /* If the block found by findFreeBlock is larger than we need then:
+         If the leftover space in the new block is greater than the sizeof(_block)+4 then
+         split the block.
+         If the leftover space in the new block is less than the sizeof(_block)+4 then
+         don't split the block.
    */
 
    /* Could not find free _block, so grow heap */
-   if (next == NULL) 
+   if (next == NULL)
    {
       next = growHeap(last, size);
    }
+   else
+   {
+      // Some other allocation can use this 4 bytes or more
+      // so split this current block into 2
+      if ((next->size - size) >= sizeof(struct _block) + 4)
+      {
+         /* We have to cast it to a uintptr_t first so we don't
+         use the regular pointer arithmetic since that will offset the
+         address by sizeof(struct _block) instead of by one
+         */
+         struct _block *newNode = (struct _block *)((uintptr_t)next + sizeof(struct _block) + size);
+
+         newNode->next = next->next; // Add a node in the middle of next and next->next
+         newNode->free = true; // we just split this from a free block so it should be free
+         newNode->size = next->size - size - sizeof(struct _block);
+      
+         /* Set the new size of next, as well as the pointer to the "node" in between*/
+         next->next = newNode;
+         next->size = size;
+      }
+   }
 
    /* Could not find free _block or grow heap, so just return NULL */
-   if (next == NULL) 
+   if (next == NULL)
    {
       return NULL;
    }
-   
+
    /* Mark _block as in use */
    next->free = false;
 
@@ -226,36 +274,67 @@ void *malloc(size_t size)
  *
  * \return none
  */
-void free(void *ptr) 
+void free(void *ptr)
 {
-   if (ptr == NULL) 
+   if (ptr == NULL)
    {
       return;
    }
 
    /* Make _block as free */
+   struct _block *prev;
    struct _block *curr = BLOCK_HEADER(ptr);
    assert(curr->free == 0);
    curr->free = true;
 
-   /* TODO: Coalesce free _blocks.  If the next block or previous block 
-            are free then combine them with this block being freed.
+   /* Coalesce free _blocks.  If the next block or previous block 
+      are free then combine them with this block being freed.
    */
+
+   // If we free the beginning of list, there is no
+   // previous node that can be free for us to coalesce
+   if (curr == heapList)
+      goto second_check;
+
+   prev = heapList;
+   while (prev && prev->next != curr)
+      prev = prev->next;
+
+   // The only way if prev is NULL is if curr is heapList
+   // which we check before-hand
+   assert(prev != NULL);
+   // If the previous is not free, we proceed to the second coalescing
+   if (!prev->free)
+      goto second_check;
+
+   // TODO: maybe we memset the old block's meta data to zero or something?
+   prev->next = curr->next;
+   prev->size += curr->size + sizeof(struct _block);
+   curr = prev;
+
+second_check:
+   if (curr->next->free)
+   {
+      curr->size += curr->next->size + sizeof(struct _block);
+      curr->next = curr->next->next;
+   }
+
+   // There should be no more than 3 frees in a row
+   // if we implemented this correctly but just in case
+   assert(!curr->next->free);
 }
 
-void *calloc( size_t nmemb, size_t size )
+void *calloc(size_t nmemb, size_t size)
 {
    // \TODO Implement calloc
    return NULL;
 }
 
-void *realloc( void *ptr, size_t size )
+void *realloc(void *ptr, size_t size)
 {
    // \TODO Implement realloc
    return NULL;
 }
-
-
 
 /* vim: IENTRTMzMjAgU3ByaW5nIDIwMjM= -----------------------------------------*/
 /* vim: set expandtab sts=3 sw=3 ts=6 ft=cpp: --------------------------------*/
