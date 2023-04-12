@@ -45,6 +45,10 @@ void printStatistics(void)
    printf("max heap:\t%d\n", max_heap);
 }
 
+#if defined NEXT && NEXT == 0
+static struct _block *lastAlloc = NULL;
+#endif
+
 struct _block
 {
    size_t size;         /* Size of the allocated _block of memory in bytes */
@@ -69,7 +73,11 @@ struct _block *heapList = NULL; /* Free list to track the _blocks available */
  */
 struct _block *findFreeBlock(struct _block **last, size_t size)
 {
+#if defined NEXT && NEXT == 0
+   struct _block *curr = lastAlloc;
+#else
    struct _block *curr = heapList;
+#endif
 
 #if defined FIT && FIT == 0
    /* First fit */
@@ -126,10 +134,27 @@ struct _block *findFreeBlock(struct _block **last, size_t size)
    curr = worst;
 #endif
 
-   // \TODO Put your Next Fit code in this #ifdef block
-   //#if defined NEXT && NEXT == 0
-   /** \TODO Implement next fit here */
-   //#endif
+#if defined NEXT && NEXT == 0
+   while (curr)
+   {
+      if (curr->free && curr->size >= size)
+         return curr;
+
+      *last = curr;
+      curr = curr->next;
+   }
+
+   curr = heapList;
+   while (curr != lastAlloc)
+   {
+      if (curr->free && curr->size >= size)
+         return curr;
+
+      curr = curr->next;
+   }
+
+   curr = NULL;
+#endif
 
    return curr;
 }
@@ -266,6 +291,10 @@ void *malloc(size_t size)
       return NULL;
    }
 
+#if defined NEXT && NEXT == 0
+   lastAlloc = next;
+#endif
+
    /* Mark _block as in use */
    next->free = false;
 
@@ -348,14 +377,27 @@ second_check:
 
 void *calloc(size_t nmemb, size_t size)
 {
-   // \TODO Implement calloc
-   return NULL;
+   void *ret = malloc(nmemb * size);
+   memset(ret, 0, nmemb * size);
+
+   return ret;
 }
 
 void *realloc(void *ptr, size_t size)
 {
-   // \TODO Implement realloc
-   return NULL;
+   void *dst = malloc(size);
+
+   /* If we could allocate the memory, only then do we copy */
+   if (dst != NULL)
+   {
+      struct _block *this = BLOCK_HEADER(ptr);
+      size = this->size > size ? size : this->size;
+
+      memcpy(dst, ptr, size);
+   }
+
+   free(ptr);
+   return dst;
 }
 
 /* vim: IENTRTMzMjAgU3ByaW5nIDIwMjM= -----------------------------------------*/
