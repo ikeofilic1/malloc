@@ -291,6 +291,7 @@ void *malloc(size_t size)
       return NULL;
    }
 
+// This will always be the last point we allocated memory
 #if defined NEXT && NEXT == 0
    lastAlloc = next;
 #endif
@@ -347,6 +348,10 @@ void free(void *ptr)
    if (!prev->free)
       goto second_check;
 
+   // Check that we are actually coalescing consecutive blocks.
+   // This is usually the case unless the user messes with the node metadata
+   assert((char *)BLOCK_DATA(prev) + prev->size == (char *)curr);
+
    // TODO: maybe we memset the old block's meta data to zero or something?
    prev->next = curr->next;
    prev->size += curr->size + sizeof(struct _block);
@@ -360,6 +365,9 @@ second_check:
    // If there is a node after this and it is free then we coalesce
    if (curr->next && curr->next->free)
    {
+      // Before we coalesce, perform quick sanity check
+      assert((char *)BLOCK_DATA(curr) + curr->size == (char *)curr->next);
+
       curr->size += curr->next->size + sizeof(struct _block);
       curr->next = curr->next->next;
 
@@ -367,9 +375,9 @@ second_check:
       ++num_coalesces;
       --num_blocks;
    }
-   // There should be no more than 3 frees in a row
-   // if we implemented this correctly but just in case
-   assert(!curr->next || !curr->next->free);
+   // There should be no more than 3 free blocks in a row
+   if (curr->next)
+      assert(!curr->next->free);
 
    /* Free is sucessful*/
    ++num_frees;

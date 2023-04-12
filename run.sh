@@ -2,7 +2,7 @@
 
 make
 for lib in lib/*; do
-    echo "Testing $lib..."
+    echo -e "\nTesting $lib..."
     for test in $(find tests -type f -executable); do
         if env LD_PRELOAD=$lib $test > /dev/null; then
             echo -e "\t\x1b[32;1m$test passed"
