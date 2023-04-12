@@ -265,11 +265,11 @@ void *malloc(size_t size)
       // so split this current block into 2
       if ((next->size - size) >= sizeof(struct _block) + 4)
       {
-         /* We have to cast it to a uintptr_t first so we don't
+         /* We have to cast it to a char * first so we don't
          use the regular pointer arithmetic since that will offset the
          address by sizeof(struct _block) instead of by one
          */
-         struct _block *newNode = (struct _block *)((uintptr_t)next + sizeof(struct _block) + size);
+         struct _block *newNode = (struct _block *)((char *)next + sizeof(struct _block) + size);
 
          newNode->next = next->next; // Add a node in the middle of next and next->next
          newNode->free = true;       // we just split this from a free block so it should be free
