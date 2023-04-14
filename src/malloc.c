@@ -11,15 +11,15 @@
 #define BLOCK_HEADER(ptr) ((struct _block *)(ptr)-1)
 
 static int atexit_registered = 0;
-static int num_mallocs = 0;
-static int num_frees = 0;
-static int num_reuses = 0;
-static int num_grows = 0;
-static int num_splits = 0;
-static int num_coalesces = 0;
-static int num_blocks = 0;
-static int num_requested = 0;
-static int max_heap = 0;
+static size_t num_mallocs = 0;
+static size_t num_frees = 0;
+static size_t num_reuses = 0;
+static size_t num_grows = 0;
+static size_t num_splits = 0;
+static size_t num_coalesces = 0;
+static size_t num_blocks = 0;
+static size_t num_requested = 0;
+static size_t max_heap = 0;
 
 /*
  *  \brief printStatistics
@@ -34,15 +34,15 @@ static int max_heap = 0;
 void printStatistics(void)
 {
    printf("\nheap management statistics\n");
-   printf("mallocs:\t%d\n", num_mallocs);
-   printf("frees:\t\t%d\n", num_frees);
-   printf("reuses:\t\t%d\n", num_reuses);
-   printf("grows:\t\t%d\n", num_grows);
-   printf("splits:\t\t%d\n", num_splits);
-   printf("coalesces:\t%d\n", num_coalesces);
-   printf("blocks:\t\t%d\n", num_blocks);
-   printf("requested:\t%d\n", num_requested);
-   printf("max heap:\t%d\n", max_heap);
+   printf("mallocs:\t%ld\n", num_mallocs);
+   printf("frees:\t\t%ld\n", num_frees);
+   printf("reuses:\t\t%ld\n", num_reuses);
+   printf("grows:\t\t%ld\n", num_grows);
+   printf("splits:\t\t%ld\n", num_splits);
+   printf("coalesces:\t%ld\n", num_coalesces);
+   printf("blocks:\t\t%ld\n", num_blocks);
+   printf("requested:\t%ld\n", num_requested);
+   printf("max heap:\t%ld\n", max_heap);
 }
 
 #if defined NEXT && NEXT == 0
@@ -117,11 +117,12 @@ struct _block *findFreeBlock(struct _block **last, size_t size)
 
 #if defined WORST && WORST == 0
    size_t worstDiff = 0;
+
    struct _block *worst = NULL; // In case there is no available block
    while (curr)
    {
       if (curr->free && (curr->size >= size) &&
-          ((curr->size - size) > worstDiff))
+          ((curr->size - size) >= worstDiff))
       {
          worst = curr;
          worstDiff = curr->size - size;

@@ -1,0 +1,56 @@
+=========lib/libmalloc-ff.so==========
+
+heap management statistics
+mallocs:	2
+frees:		1
+reuses:		1
+grows:		1
+splits:		1
+coalesces:	0
+blocks:		2
+requested:	-2147479557
+max heap:	2147483644
+======================================
+
+=========lib/libmalloc-nf.so==========
+
+heap management statistics
+mallocs:	2
+frees:		1
+reuses:		1
+grows:		1
+splits:		1
+coalesces:	0
+blocks:		2
+requested:	-2147479557
+max heap:	2147483644
+======================================
+
+=========lib/libmalloc-bf.so==========
+
+heap management statistics
+mallocs:	2
+frees:		1
+reuses:		1
+grows:		1
+splits:		1
+coalesces:	0
+blocks:		2
+requested:	-2147479557
+max heap:	2147483644
+======================================
+
+=========lib/libmalloc-wf.so==========
+
+heap management statistics
+mallocs:	2
+frees:		1
+reuses:		1
+grows:		1
+splits:		1
+coalesces:	0
+blocks:		2
+requested:	-2147479557
+max heap:	2147483644
+======================================
+

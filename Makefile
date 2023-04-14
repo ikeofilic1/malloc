@@ -16,10 +16,15 @@ TESTS=		tests/test1 \
                 tests/calloc \
 				tests/test-coalesce
 
+PERFORMANCE_TESTS=	performance-tests/malloc-free \
+					performance-tests/ten-allocs \
+					performance-tests/alternate
+
+
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-all:    $(LIBRARIES) $(TESTS)
+all:    $(LIBRARIES) $(TESTS) $(PERFORMANCE_TESTS)
 
 lib/libmalloc-ff.so:     src/malloc.c
 	$(CC) -shared -fPIC $(CFLAGS) -DFIT=0 -o $@ $< $(LDFLAGS)
@@ -34,6 +39,8 @@ lib/libmalloc-wf.so:     src/malloc.c
 	$(CC) -shared -fPIC $(CFLAGS) -DWORST=0 -o $@ $< $(LDFLAGS)
 
 clean:
-	rm -f $(LIBRARIES) $(TESTS)
+	rm -f $(LIBRARIES) $(TESTS) $(PERFORMANCE_TESTS)
 
-.PHONY: all clean
+perf: $(PERFORMANCE_TESTS) $(LIBRARIES)
+
+.PHONY: all clean perf

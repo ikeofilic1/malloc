@@ -1,0 +1,4 @@
+Test name, First fit, Next fit, Best fit, Worst fit, Malloc
+malloc-free, 0.23, 0.15, 0.21, 0.22, 0.25
+ten-allocs, 0.01, 0.00, 0.00, 0.00, 0.00
+alternate, 0.75, 0.83, 0.79, 0.79, 0.01
