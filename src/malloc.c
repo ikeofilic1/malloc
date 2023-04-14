@@ -199,6 +199,7 @@ struct _block *growHeap(struct _block *last, size_t size)
 
    ++num_grows;
    ++num_blocks;
+   max_heap += size;
 
    /* Update _block metadata:
       Set the size of the new block and initialize the new block to "free".
@@ -230,6 +231,8 @@ void *malloc(size_t size)
       atexit(printStatistics);
    }
 
+   num_requested += size;
+
    /* Align to multiple of 4 */
    size = ALIGN4(size);
 
@@ -238,9 +241,6 @@ void *malloc(size_t size)
    {
       return NULL;
    }
-
-   // After alignment or not??
-   num_requested += size;
 
    /* Look for free _block.  If a free block isn't found then we need to grow our heap. */
 
@@ -263,7 +263,7 @@ void *malloc(size_t size)
    {
       // Some other allocation can use this 4 bytes or more
       // so split this current block into 2
-      if ((next->size - size) >= sizeof(struct _block) + 4)
+      if (next->size > size && (next->size - size) >= (sizeof(struct _block) + 4))
       {
          /* We have to cast it to a char * first so we don't
          use the regular pointer arithmetic since that will offset the
@@ -344,6 +344,7 @@ void free(void *ptr)
    // The only way if prev is NULL is if curr is heapList
    // which we check before-hand
    assert(prev != NULL);
+
    // If the previous is not free, we proceed to the second coalescing
    if (!prev->free)
       goto second_check;
@@ -395,8 +396,8 @@ void *realloc(void *ptr, size_t size)
 {
    void *dst = malloc(size);
 
-   /* If we could allocate the memory, only then do we copy */
-   if (dst != NULL)
+   /* If we could allocate the memory, or ptr was not NULL, only then do we copy */
+   if (ptr && dst != NULL)
    {
       struct _block *this = BLOCK_HEADER(ptr);
       size = this->size > size ? size : this->size;
